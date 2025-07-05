@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Audio Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script> <!-- A placeholder, will use inline SVG for reliability -->
+</head>
+<body class="theme-dark">
+
+    <div id="app-container">
+        <canvas id="visualizer-canvas"></canvas>
+
+        <div id="main-content">
+            <div id="track-info">
+                <img id="album-art" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Album Art">
+                <div id="track-details">
+                    <h2 id="track-title">No file loaded</h2>
+                    <p id="track-artist">Upload an audio file to begin</p>
+                </div>
+            </div>
+
+            <div id="player-controls">
+                <div id="progress-container">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="progress-bar" value="0" step="0.1" disabled>
+                    <span id="duration">0:00</span>
+                </div>
+
+                <div id="buttons-container">
+                    <button id="skip-backward-btn" class="control-btn" aria-label="Skip Backward 10s"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5,7.5v9l-5-4.5L9.5,7.5z M10.5,12l5,4.5v-9L10.5,12z"/></svg></button>
+                    <button id="play-pause-btn" class="control-btn play-btn" aria-label="Play"><svg class="play-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8,5.14V19.14L19,12.14L8,5.14Z"/></svg><svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14,19H18V5H14M6,19H10V5H6V19Z"/></svg></button>
+                    <button id="skip-forward-btn" class="control-btn" aria-label="Skip Forward 10s"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.5,7.5v9l5-4.5L14.5,7.5z M13.5,12l-5,4.5v-9L13.5,12z"/></svg></button>
+                </div>
+            </div>
+
+            <div id="menu-buttons">
+                <label for="file-input" class="menu-btn">Upload File</label>
+                <input type="file" id="file-input" accept="audio/mp3, audio/wav, audio/ogg, audio/m4a, audio/*" hidden>
+                <button id="settings-btn" class="menu-btn">Settings</button>
+                <button id="visualization-btn" class="menu-btn">Visualization</button>
+            </div>
+        </div>
+    </div>
+
+    <aside id="settings-menu" class="side-menu">
+        <div class="menu-header">
+            <h3>Settings</h3>
+            <button class="close-btn" data-target="settings-menu">×</button>
+        </div>
+        <div class="menu-content">
+            <div class="setting-item">
+                <label for="theme-select">Theme</label>
+                <select id="theme-select">
+                    <option value="theme-dark" selected>Dark (Default)</option>
+                    <option value="theme-light">Light</option>
+                    <option value="theme-midnight">Midnight</option>
+                    <option value="theme-forest">Forest</option>
+                    <option value="theme-ocean">Ocean</option>
+                    <option value="theme-sunset">Sunset</option>
+                    <option value="theme-lavender">Lavender</option>
+                    <option value="theme-rose">Rose Gold</option>
+                    <option value="theme-slate">Slate</option>
+                    <option value="theme-cyber">Cyberpunk</option>
+                    <option value="theme-mono">Monochrome</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="speed-slider">Playback Speed (<span id="speed-value">1.0</span>x)</label>
+                <div class="slider-group">
+                    <input type="range" id="speed-slider" min="0.5" max="2" step="0.05" value="1">
+                    <button id="reset-speed-btn" class="reset-btn">Reset</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label for="pitch-slider">Pitch (<span id="pitch-value">0</span> cents)</label>
+                <div class="slider-group">
+                    <input type="range" id="pitch-slider" min="-1200" max="1200" step="50" value="0">
+                    <button id="reset-pitch-btn" class="reset-btn">Reset</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <aside id="visualization-menu" class="side-menu">
+        <div class="menu-header">
+            <h3>Visualization</h3>
+            <button class="close-btn" data-target="visualization-menu">×</button>
+        </div>
+        <div class="menu-content">
+            <div class="setting-item">
+                <label for="viz-toggle">Toggle Visualization</label>
+                <label class="switch">
+                    <input type="checkbox" id="viz-toggle" checked>
+                    <span class="switch-slider"></span>
+                </label>
+            </div>
+            <fieldset id="viz-options-group" class="viz-control">
+                <div class="setting-item">
+                    <label for="viz-type-select">Visualization Type</label>
+                    <select id="viz-type-select">
+                        <option value="waveform-lines">Waveform (Lines)</option>
+                        <option value="waveform-smooth">Waveform (Smooth)</option>
+                        <option value="circle-smooth-flow">Circle (Smooth, Flow)</option>
+                        <option value="circle-smooth-pulse">Circle (Smooth, Pulse)</option>
+                        <option value="circle-lines-flow">Circle (Lines, Flow)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="viz-theme-select">Visualization Theme</label>
+                    <select id="viz-theme-select">
+                        <option value="default">Default (White)</option>
+                        <option value="rainbow">Rainbow</option>
+                        <option value="warmth">Warmth</option>
+                        <option value="cooled">Cooled</option>
+                        <option value="custom">Custom Color</option>
+                    </select>
+                </div>
+                <div class="setting-item" id="custom-color-container" style="display: none;">
+                    <label for="viz-color-picker">Custom Color</label>
+                    <input type="color" id="viz-color-picker" value="#ffffff">
+                    <input type="text" id="viz-hex-input" value="#ffffff" maxlength="7">
+                </div>
+                <div class="setting-item viz-lines-only">
+                    <label for="line-count-slider">Line Count (<span id="line-count-value">64</span>)</label>
+                    <input type="range" id="line-count-slider" min="20" max="100" step="1" value="64">
+                </div>
+                <div class="setting-item">
+                    <label for="symmetry-toggle">Symmetry</label>
+                    <label class="switch">
+                        <input type="checkbox" id="symmetry-toggle">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <fieldset id="symmetry-options-group" class="viz-control" disabled>
+                    <div class="setting-item">
+                        <label for="repeat-amount-slider">Repeat Amount (<span id="repeat-amount-value">2</span>)</label>
+                        <input type="range" id="repeat-amount-slider" min="2" max="6" step="1" value="2">
+                    </div>
+                    <div class="setting-item">
+                        <label for="mirror-toggle">Mirror</label>
+                        <label class="switch">
+                            <input type="checkbox" id="mirror-toggle">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                </fieldset>
+                <div class="setting-item">
+                    <label for="sensitivity-slider">Sensitivity (<span id="sensitivity-value">1.0</span>)</label>
+                    <input type="range" id="sensitivity-slider" min="0.5" max="2.5" step="0.1" value="1.0">
+                </div>
+                <div class="setting-item">
+                    <label for="smoothing-slider">Smoothing (<span id="smoothing-value">0.8</span>)</label>
+                    <input type="range" id="smoothing-slider" min="0.1" max="0.95" step="0.05" value="0.8">
+                </div>
+            </fieldset>
+        </div>
+    </aside>
+
+    <div id="menu-overlay"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
