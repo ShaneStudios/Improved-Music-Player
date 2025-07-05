@@ -250,9 +250,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             let gradient;
             if (settings.visualization.type.includes('circle')) {
-                gradient = ctx.createRadialGradient(0, 0, 50, 0, 0, DOM.canvas.height / 3);
+                gradient = ctx.createRadialGradient(0, 0, 50, 0, 0, Math.min(DOM.canvas.width, DOM.canvas.height) / 3);
             } else {
-                gradient = ctx.createLinearGradient(0, -DOM.canvas.height / 4, 0, DOM.canvas.height / 4);
+                gradient = ctx.createLinearGradient(0, -DOM.canvas.height / 2, 0, DOM.canvas.height / 2);
             }
 
             if (theme === 'rainbow') {
@@ -282,10 +282,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const sliceWidth = DOM.canvas.width / lineCount;
         let x = -DOM.canvas.width / 2 + sliceWidth / 2;
 
+        const maxVizHeight = DOM.canvas.height * 0.9;
+        const baseAmplitude = maxVizHeight / 2.0 / 2.0; 
+
         for (let i = 0; i < lineCount; i++) {
             const dataIndex = Math.floor(i * (bufferLength / lineCount));
             const v = dataArray[dataIndex] / 128.0;
-            const h = v * (DOM.canvas.height / 3) * settings.visualization.sensitivity;
+            const h = v * baseAmplitude * settings.visualization.sensitivity;
             
             ctx.beginPath();
             ctx.moveTo(x, -h / 2);
@@ -302,11 +305,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const relevantBufferLength = Math.floor(bufferLength * 0.8);
         const sliceWidth = DOM.canvas.width / relevantBufferLength;
         let x = -DOM.canvas.width / 2;
+
+        const maxVizHeight = DOM.canvas.height * 0.9;
+        const baseAmplitude = maxVizHeight / 2.0 / 4.0;
         
         ctx.moveTo(x, 0);
         for (let i = 0; i < relevantBufferLength; i++) {
             const v = dataArray[i] / 128.0;
-            const y = v * v * (DOM.canvas.height / 3.5) * settings.visualization.sensitivity;
+            const y = v * v * baseAmplitude * settings.visualization.sensitivity;
             ctx.lineTo(x, y);
             x += sliceWidth;
         }
@@ -316,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (let i = relevantBufferLength - 1; i >= 0; i--) {
             const v = dataArray[i] / 128.0;
-            const y = v * v * (DOM.canvas.height / 3.5) * settings.visualization.sensitivity;
+            const y = v * v * baseAmplitude * settings.visualization.sensitivity;
             ctx.lineTo(x, -y);
             x -= sliceWidth;
         }
@@ -332,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const relevantBufferLength = Math.floor(bufferLength * 0.7);
         const pointsToDraw = settings.visualization.type.includes('lines') ? lineCount : 180;
     
-        const maxRadius = Math.min(DOM.canvas.width, DOM.canvas.height) / 4.5;
+        const maxRadius = Math.min(DOM.canvas.width, DOM.canvas.height) / 4;
         let baseRadius = isPulse ? maxRadius * 0.6 : maxRadius / 3;
     
         if (isPulse) {
