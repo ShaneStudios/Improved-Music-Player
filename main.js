@@ -279,8 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setVizStyle();
         ctx.lineWidth = 2;
         const lineCount = settings.visualization.lineCount;
-        const sliceWidth = (DOM.canvas.width / lineCount);
-        let x = -DOM.canvas.width / 2;
+        const sliceWidth = DOM.canvas.width / lineCount;
+        let x = -DOM.canvas.width / 2 + sliceWidth / 2;
 
         for (let i = 0; i < lineCount; i++) {
             const dataIndex = Math.floor(i * (bufferLength / lineCount));
@@ -299,22 +299,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawWaveformSmooth() {
         setVizStyle();
         ctx.beginPath();
-        const sliceWidth = DOM.canvas.width / bufferLength;
+        const relevantBufferLength = Math.floor(bufferLength * 0.8);
+        const sliceWidth = DOM.canvas.width / relevantBufferLength;
         let x = -DOM.canvas.width / 2;
         
         ctx.moveTo(x, 0);
-
-        for (let i = 0; i < bufferLength; i++) {
+        for (let i = 0; i < relevantBufferLength; i++) {
             const v = dataArray[i] / 128.0;
-            const y = v * (DOM.canvas.height / 4) * settings.visualization.sensitivity;
+            const y = v * v * (DOM.canvas.height / 3.5) * settings.visualization.sensitivity;
             ctx.lineTo(x, y);
             x += sliceWidth;
         }
         
         x = DOM.canvas.width / 2;
-        for (let i = bufferLength - 1; i >= 0; i--) {
+        ctx.lineTo(x, 0);
+
+        for (let i = relevantBufferLength - 1; i >= 0; i--) {
             const v = dataArray[i] / 128.0;
-            const y = v * (DOM.canvas.height / 4) * settings.visualization.sensitivity;
+            const y = v * v * (DOM.canvas.height / 3.5) * settings.visualization.sensitivity;
             ctx.lineTo(x, -y);
             x -= sliceWidth;
         }
@@ -327,43 +329,45 @@ document.addEventListener('DOMContentLoaded', () => {
         setVizStyle();
         ctx.lineWidth = isSmooth ? 4 : 2;
         const lineCount = settings.visualization.lineCount;
-        const pointsToDraw = settings.visualization.type.includes('lines') ? lineCount : bufferLength;
-
-        const maxRadius = DOM.canvas.height / 4;
-        let baseRadius = isPulse ? maxRadius / 2 : maxRadius / 3;
-        
+        const relevantBufferLength = Math.floor(bufferLength * 0.7);
+        const pointsToDraw = settings.visualization.type.includes('lines') ? lineCount : 180;
+    
+        const maxRadius = Math.min(DOM.canvas.width, DOM.canvas.height) / 4.5;
+        let baseRadius = isPulse ? maxRadius * 0.6 : maxRadius / 3;
+    
         if (isPulse) {
             let sum = 0;
-            for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
-            const avg = sum / bufferLength;
-            baseRadius = (avg / 128) * (maxRadius / 2) * settings.visualization.sensitivity + maxRadius/4;
+            for (let i = 0; i < relevantBufferLength; i++) sum += dataArray[i];
+            const avg = sum / relevantBufferLength || 0;
+            baseRadius = (avg / 128.0) * (maxRadius / 2) * settings.visualization.sensitivity + maxRadius * 0.4;
         }
-
+    
         ctx.beginPath();
-        for (let i = 0; i <= pointsToDraw; i++) {
-            const angle = (i / pointsToDraw) * Math.PI * 2;
-            const dataIndex = Math.floor((i / pointsToDraw) * bufferLength) % bufferLength;
-            const v = dataArray[dataIndex] / 128.0;
-            const r_offset = v * (maxRadius / 2) * settings.visualization.sensitivity;
+        for (let i = 0; i < pointsToDraw; i++) {
+            const percent = i / pointsToDraw;
+            const angle = percent * Math.PI * 2;
+            const logIndex = Math.floor(Math.pow(percent, 1.5) * (relevantBufferLength - 1));
+            const dataIndex = Math.min(relevantBufferLength - 1, logIndex);
+    
+            const v = (dataArray[dataIndex] || 0) / 128.0;
+            const r_offset = v * v * (maxRadius / 1.5) * settings.visualization.sensitivity;
             const radius = baseRadius + r_offset;
-            
+    
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
-
+    
             if (isSmooth) {
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             } else {
-                const x_outer = Math.cos(angle) * (radius + r_offset / 2);
-                const y_outer = Math.sin(angle) * (radius + r_offset / 2);
-                ctx.moveTo(x, y);
-                ctx.lineTo(x_outer, y_outer);
+                const innerRadius = baseRadius * 0.9;
+                const x_inner = Math.cos(angle) * innerRadius;
+                const y_inner = Math.sin(angle) * innerRadius;
+                ctx.moveTo(x_inner, y_inner);
+                ctx.lineTo(x, y);
             }
         }
-        
+    
         if (isSmooth) {
             ctx.closePath();
             if (isPulse) ctx.fill(); else ctx.stroke();
@@ -438,8 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.vizToggle.addEventListener('change', (e) => { settings.visualization.enabled = e.target.checked; updateUIFromSettings(); });
         DOM.vizTypeSelect.addEventListener('change', (e) => { settings.visualization.type = e.target.value; updateUIFromSettings(); });
         DOM.vizThemeSelect.addEventListener('change', (e) => { settings.visualization.theme = e.target.value; updateUIFromSettings(); });
-        DOM.vizColorPicker.addEventListener('input', (e) => { settings.visualization.customColor = e.target.value; updateUIFromSettings(); });
-        DOM.vizHexInput.addEventListener('change', (e) => { settings.visualization.customColor = e.target.value; updateUIFromSettings(); });
+        DOM.vizColorPicker.addEventListener('input', (e) => { settings.visualization.customColor = e.target.value; DOM.vizHexInput.value = e.target.value; updateUIFromSettings(); });
+        DOM.vizHexInput.addEventListener('change', (e) => { let val = e.target.value; if (!val.startsWith('#')) val = '#' + val; settings.visualization.customColor = val; updateUIFromSettings(); });
         DOM.lineCountSlider.addEventListener('input', (e) => { settings.visualization.lineCount = parseInt(e.target.value); updateUIFromSettings(); });
         DOM.symmetryToggle.addEventListener('change', (e) => { settings.visualization.symmetry.enabled = e.target.checked; updateUIFromSettings(); });
         DOM.repeatAmountSlider.addEventListener('input', (e) => { settings.visualization.symmetry.repeats = parseInt(e.target.value); updateUIFromSettings(); });
