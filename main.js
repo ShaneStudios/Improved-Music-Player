@@ -277,10 +277,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawWaveformLines() {
         setVizStyle();
-        ctx.lineWidth = 2;
         const lineCount = settings.visualization.lineCount;
-        const sliceWidth = DOM.canvas.width / lineCount;
-        let x = -DOM.canvas.width / 2 + sliceWidth / 2;
+        const totalWidth = DOM.canvas.width;
+
+        const sliceWidth = totalWidth / lineCount;
+        const gapRatio = 0.2; // 20% gap
+        
+        ctx.lineWidth = sliceWidth * (1 - gapRatio);
+        ctx.lineCap = 'round';
+
+        let x = -totalWidth / 2 + sliceWidth / 2;
 
         const maxVizHeight = DOM.canvas.height * 0.9;
         const baseAmplitude = maxVizHeight / 2.0 / 2.0; 
@@ -334,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawCircle(isSmooth, isPulse) {
         setVizStyle();
         ctx.lineWidth = isSmooth ? 4 : 2;
+        ctx.lineCap = 'butt'; // Reset linecap for circles
         const lineCount = settings.visualization.lineCount;
         const relevantBufferLength = Math.floor(bufferLength * 0.7);
         const pointsToDraw = settings.visualization.type.includes('lines') ? lineCount : 180;
